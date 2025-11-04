@@ -54,9 +54,9 @@ export const sidebarItems: NavGroup[] = [
     items: [
       {
         title: "New Post",
-        url: "/dashboard/coming-soon",
+        url: "/dashboard/create-post",
         icon: FilePlus2,
-        comingSoon: true,
+        comingSoon: false,
       },
       {
         title: "Studio Creator",
