@@ -1,130 +1,88 @@
-<<<<<<< HEAD
-# Next.js Admin Template with TypeScript & Shadcn UI
+# Post Dominator – Social Media Scheduler
 
-**Post Dominator** - Includes multiple dashboards, authentication layouts, customizable theme presets, and more.
+Post Dominator is a social media scheduling platform that helps agencies, creators, and small businesses plan, automate, and analyze their cross-channel content strategy. From calendar planning to AI-assisted copy tweaks, the app centralizes day-to-day publishing workflows so teams can stay consistent without being online 24/7.
 
-<img src="https://github.com/arhamkhnz/next-shadcn-admin-dashboard/blob/main/media/dashboard.png?version=5" alt="Dashboard Screenshot">
+## Why Post Dominator?
 
-Most admin templates I found, free or paid, felt cluttered, outdated, or too rigid. I built this as a cleaner alternative with features often missing in others, such as theme toggling and layout controls, while keeping the design modern, minimal, and flexible.
+- Unified planner for all major platforms (Facebook, Instagram, X, LinkedIn, TikTok, YouTube Shorts)
+- Bulk upload and queue management to keep campaigns organized
+- AI content suggestions and hashtag recommendations to accelerate ideation
+- Approval workflows to keep managers, clients, and contributors aligned
+- Post-performance analytics with actionable insights on reach, engagement, and audience growth
+- Collaboration tools (mentions, notes, campaign timelines) that reduce context switching
 
-I’ve taken design inspiration from various sources. If you’d like credit for something specific, feel free to open an issue or reach out.
+## Core Features
 
-> **View demo:** [Post Dominator](https://next-shadcn-admin-dashboard.vercel.app)
+- **Content Calendar** – Drag-and-drop scheduler with platform-specific previews and timezone-aware targeting.
+- **Smart Queue** – Automatically fills posting gaps based on configured cadence and best-time recommendations.
+- **Asset Library** – Central repository for brand-safe media with tagging, search, and usage tracking.
+- **Automation Recipes** – Rules that can auto-publish evergreen content, recycle top performers, or notify stakeholders.
+- **Analytics Hub** – Cross-network dashboards and exportable reports covering KPIs, conversion funnels, and audience segments.
+- **Integrations** – Native connectors for cloud storage, CMS systems, URL shorteners, and CRM tools.
 
-> [!TIP]
-> I’m also working on Nuxt.js, Svelte, and React (Vite + TanStack Router) versions of this dashboard. They’ll be live soon.
+## Architecture Overview
 
-## Features
+| Layer | Tech |
+| --- | --- |
+| Frontend | Next.js, TypeScript, Tailwind CSS, Shadcn UI |
+| API | Next.js Route Handlers with tRPC-style contracts |
+| Data | PostgreSQL (primary), Redis (caching and job queues) |
+| Auth | OAuth for social platforms, NextAuth for workspace login |
+| Background Jobs | BullMQ workers handling publishing, analytics sync, and notification delivery |
 
-- Built with Next.js 16, TypeScript, Tailwind CSS v4, and Shadcn UI  
-- Responsive and mobile-friendly  
-- Customizable theme presets (light/dark modes with color schemes like Tangerine, Brutalist, and more)  
-- Flexible layouts (collapsible sidebar, variable content widths)  
-- Authentication flows and screens  
-- Prebuilt dashboards (Default, CRM, Finance) with more coming soon  
-- Role-Based Access Control (RBAC) with config-driven UI and multi-tenant support *(planned)*  
-
-> [!NOTE]
-> The default dashboard uses the **shadcn neutral** theme.  
-> It also includes additional color presets inspired by [Tweakcn](https://tweakcn.com):  
->
-> - Tangerine  
-> - Neo Brutalism  
-> - Soft Pop  
->
-> You can create more presets by following the same structure as the existing ones.
-
-> Looking for the **Next.js 15** version?  
-> Check out the [`archive/next15`](https://github.com/arhamkhnz/next-shadcn-admin-dashboard/tree/archive/next15) branch.  
-> This branch contains the setup prior to upgrading to Next 16 and the React Compiler.
-
-> Looking for the **Next.js 14 + Tailwind CSS v3** version?  
-> Check out the [`archive/next14-tailwindv3`](https://github.com/arhamkhnz/next-shadcn-admin-dashboard/tree/archive/next14-tailwindv3) branch.  
-> It has a different color theme and is not actively maintained, but I try to keep it updated with major changes.  
-
-## Tech Stack
-
-- **Framework**: Next.js 16 (App Router), TypeScript, Tailwind CSS v4  
-- **UI Components**: Shadcn UI  
-- **Validation**: Zod  
-- **Forms & State Management**: React Hook Form, Zustand  
-- **Tables & Data Handling**: TanStack Table  
-- **Tooling & DX**: ESLint, Prettier, Husky  
-
-## Screens
-
-### Available
-- Default Dashboard  
-- CRM Dashboard  
-- Finance Dashboard  
-- Authentication (4 screens)
-
-### Coming Soon
-- Analytics Dashboard  
-- eCommerce Dashboard  
-- Academy Dashboard  
-- Logistics Dashboard  
-- Email Page  
-- Chat Page  
-- Calendar Page  
-- Kanban Board  
-- Invoice Page  
-- Users Management  
-- Roles Management  
-
-## Colocation File System Architecture
-
-This project follows a **colocation-based architecture** each feature keeps its own pages, components, and logic inside its route folder.  
-Shared UI, hooks, and configuration live at the top level, making the codebase modular, scalable, and easier to maintain as the app grows.
-
-For a full breakdown of the structure with examples, see the [Next Colocation Template](https://github.com/arhamkhnz/next-colocation-template).
+The project follows a feature-colocation structure to keep related UI, hooks, handlers, and utilities bundled per domain area. Shared primitives live in `src/shared`, while platform-specific logic resides in `src/modules/<feature>`.
 
 ## Getting Started
 
-You can run this project locally, or deploy it instantly with Vercel.
-
-### Deploy with Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Farhamkhnz%2Fnext-shadcn-admin-dashboard)
-
-_Deploy your own copy with one click._
-
-### Run locally
-
-1. **Clone the repository**
+1. **Clone**
    ```bash
-   git clone https://github.com/arhamkhnz/next-shadcn-admin-dashboard.git
+   git clone https://github.com/your-org/post-dominator.git
    ```
-   
-2. **Navigate into the project**
+2. **Install**
    ```bash
-    cd next-shadcn-admin-dashboard
+   npm install
    ```
-   
-3. **Install dependencies**
+3. **Configure**
+   - Duplicate `.env.example` into `.env.local`.
+   - Fill in workspace domain, database credentials, Redis URL, and OAuth secrets for each social network you plan to connect.
+4. **Setup Database**
    ```bash
-    npm install
+   npm run db:push
+   npm run db:seed
    ```
-
-4. **Start the development server**
+5. **Run**
    ```bash
    npm run dev
    ```
+   The app launches at `http://localhost:3000`.
 
-Your app will be running at [http://localhost:3000](http://localhost:3000)
+## Key Scripts
 
----
+```text
+npm run dev        # start local dev server
+npm run build      # build production bundle
+npm run lint       # run ESLint checks
+npm run test       # unit/integration tests
+npm run db:studio  # open Prisma Studio
+```
 
-> [!IMPORTANT]  
-> This project is updated frequently. If you’re working from a fork or an older clone, pull the latest changes before syncing. Some updates may include breaking changes.
+## Project Roadmap
 
----
+- Multi-workspace analytics benchmarking
+- AI-driven campaign briefs and copy rewriting
+- Deeper TikTok and YouTube Shorts automation
+- Slack/Teams bot for approval flows
+- Mobile companion app (iOS and Android)
 
-Contributions are welcome. Feel free to open issues, feature requests, or start a discussion.
+## Contributing
 
+1. Create a feature branch from `main`.
+2. Make your changes and include tests where applicable.
+3. Run `npm run lint` and `npm run test`.
+4. Submit a pull request describing the change, testing details, and screenshots if relevant.
 
-**Happy Vibe Coding!**
-=======
-# postdominator
-social media scheduling app
->>>>>>> bde64992a12d0f2abbaf8926b48bf927f35e97c8
+Bug reports and feature ideas are always welcome—open an issue or start a discussion if you want to collaborate.
+
+## License
+
+This project is released under the MIT License. See `LICENSE` for details.
