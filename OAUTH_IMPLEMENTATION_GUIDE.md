@@ -563,6 +563,229 @@ export async function postToLinkedIn(
 
 ---
 
+### Bluesky
+
+**Developer Portal**: https://atproto.com
+
+**API Name**: AT Protocol (ATProto)
+
+#### Setup Steps
+
+1. **Create Bluesky App**
+   - Bluesky uses AT Protocol, which is decentralized
+   - You'll need to create an app password in your Bluesky account settings
+   - Go to https://bsky.app → Settings → App Passwords
+
+2. **Authentication Method**
+   - Bluesky uses **App Passwords** rather than traditional OAuth 2.0
+   - Users generate app-specific passwords in their Bluesky settings
+   - Alternative: Use OAuth-like flow with Bluesky's authentication endpoints
+
+3. **Required Permissions**
+   ```typescript
+   // Bluesky uses scopes through app passwords
+   // Users grant access by creating an app password
+   scopes: [
+     'com.atproto.repo',      // Read/write repository
+     'com.atproto.server',    // Server operations
+   ]
+   ```
+
+4. **OAuth URLs** (if using OAuth flow)
+   ```typescript
+   // Note: Bluesky's OAuth implementation may vary
+   // Check latest ATProto documentation
+   authorizationUrl: 'https://bsky.app/xrpc/com.atproto.server.createSession',
+   tokenUrl: 'https://bsky.app/xrpc/com.atproto.server.createSession',
+   ```
+
+5. **Gotchas**
+   - **App Passwords**: Primary authentication method, not traditional OAuth
+   - **Decentralized**: Each Bluesky instance (PDS) may have different endpoints
+   - **AT Protocol**: Uses a different protocol than standard OAuth 2.0
+   - **Rate Limits**: Check with your Bluesky instance for limits
+   - **Session Tokens**: Tokens are session-based and may need refresh
+
+#### Code Example
+
+```typescript
+// lib/oauth/providers/bluesky.ts
+// Option 1: Using App Password (Simpler)
+export async function authenticateWithAppPassword(
+  identifier: string, // Username or email
+  appPassword: string  // App-specific password from user
+) {
+  const response = await fetch('https://bsky.social/xrpc/com.atproto.server.createSession', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      identifier,
+      password: appPassword,
+    }),
+  });
+  
+  const data = await response.json();
+  return {
+    accessToken: data.accessJwt,
+    refreshToken: data.refreshJwt,
+    did: data.did, // Decentralized Identifier
+    handle: data.handle,
+  };
+}
+
+// Post to Bluesky (skeet)
+export async function postToBluesky(
+  accessToken: string,
+  text: string,
+  repo: string // User's DID
+) {
+  const response = await fetch('https://bsky.social/xrpc/com.atproto.repo.createRecord', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      repo,
+      collection: 'app.bsky.feed.post',
+      record: {
+        text,
+        createdAt: new Date().toISOString(),
+      },
+    }),
+  });
+  return response.json();
+}
+```
+
+---
+
+### Reddit
+
+**Developer Portal**: https://www.reddit.com/dev/api/
+
+**API Name**: Reddit API
+
+#### Setup Steps
+
+1. **Create Reddit App**
+   - Go to https://www.reddit.com/prefs/apps
+   - Click "create another app..." or "create application"
+   - Choose "web app" type
+   - Set redirect URI: `https://yourdomain.com/api/auth/reddit/callback`
+
+2. **Configure OAuth Settings**
+   - Redirect URI must match exactly
+   - Note your client ID (under the app name)
+   - Client secret is shown only once - save it immediately
+
+3. **Required Permissions (Scopes)**
+   ```typescript
+   scopes: [
+     'identity',        // Read user identity
+     'submit',          // Submit posts
+     'read',            // Read posts
+     'history',         // Read post history
+   ]
+   ```
+
+4. **OAuth URLs**
+   ```typescript
+   authorizationUrl: 'https://www.reddit.com/api/v1/authorize',
+   tokenUrl: 'https://www.reddit.com/api/v1/access_token',
+   ```
+
+5. **Gotchas**
+   - **Client Secret**: Only shown once during creation - save it immediately
+   - **User-Agent Required**: Reddit API requires a unique User-Agent header
+   - **Rate Limits**: 60 requests per minute per OAuth client
+   - **Token Duration**: Access tokens don't expire, but refresh tokens do
+   - **Subreddit Rules**: Each subreddit has posting rules - check before posting
+   - **Karma Requirements**: Some subreddits require minimum karma to post
+
+#### Code Example
+
+```typescript
+// lib/oauth/providers/reddit.ts
+export const redditProvider: OAuthProvider = {
+  name: 'reddit',
+  clientId: process.env.REDDIT_CLIENT_ID!,
+  clientSecret: process.env.REDDIT_CLIENT_SECRET!,
+  authorizationUrl: 'https://www.reddit.com/api/v1/authorize',
+  tokenUrl: 'https://www.reddit.com/api/v1/access_token',
+  redirectUri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/reddit/callback`,
+  scopes: [
+    'identity',
+    'submit',
+    'read',
+    'history',
+  ],
+};
+
+// Token exchange (uses Basic Auth)
+export async function exchangeRedditCode(code: string) {
+  const credentials = Buffer.from(
+    `${process.env.REDDIT_CLIENT_ID}:${process.env.REDDIT_CLIENT_SECRET}`
+  ).toString('base64');
+
+  const response = await fetch('https://www.reddit.com/api/v1/access_token', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${credentials}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'PostDominator/1.0 by YourUsername', // Required!
+    },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/reddit/callback`,
+    }),
+  });
+  
+  return response.json();
+}
+
+// Post to Reddit
+export async function postToReddit(
+  accessToken: string,
+  subreddit: string,
+  title: string,
+  text?: string,
+  kind: 'self' | 'link' = 'self'
+) {
+  const response = await fetch('https://oauth.reddit.com/api/submit', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'PostDominator/1.0 by YourUsername', // Required!
+    },
+    body: new URLSearchParams({
+      sr: subreddit,
+      title,
+      kind,
+      ...(text && { text }),
+    }),
+  });
+  return response.json();
+}
+
+// Get user info
+export async function getRedditUserInfo(accessToken: string) {
+  const response = await fetch('https://oauth.reddit.com/api/v1/me', {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'User-Agent': 'PostDominator/1.0 by YourUsername',
+    },
+  });
+  return response.json();
+}
+```
+
+---
+
 ### Additional Platforms
 
 #### TikTok

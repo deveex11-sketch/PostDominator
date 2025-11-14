@@ -104,6 +104,26 @@ const platforms: SocialPlatform[] = [
     apiName: "Threads API (via Instagram Graph API)",
     developerPortal: "https://developers.facebook.com/docs/threads",
   },
+  {
+    id: "bluesky",
+    name: "Bluesky",
+    icon: "Bluesky",
+    color: "#00A8E8",
+    description: "Post to Bluesky and engage with the decentralized social network",
+    isConnected: false,
+    apiName: "AT Protocol (ATProto)",
+    developerPortal: "https://atproto.com",
+  },
+  {
+    id: "reddit",
+    name: "Reddit",
+    icon: "Reddit",
+    color: "#FF4500",
+    description: "Schedule posts to subreddits and manage your Reddit presence",
+    isConnected: false,
+    apiName: "Reddit API",
+    developerPortal: "https://www.reddit.com/dev/api/",
+  },
 ];
 
 export function ConnectionsList() {

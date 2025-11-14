@@ -169,6 +169,34 @@ This document contains all user-facing text for the Connections feature in Post 
 
 ---
 
+### Bluesky Card
+
+**Platform Name**: `Bluesky`
+
+**Description**: `Post to Bluesky and engage with the decentralized social network`
+
+**Connect Button**: `Connect Bluesky`
+
+**All other text follows the same pattern as Facebook**
+
+**API Documentation Link**: `AT Protocol (ATProto) Documentation`
+
+---
+
+### Reddit Card
+
+**Platform Name**: `Reddit`
+
+**Description**: `Schedule posts to subreddits and manage your Reddit presence`
+
+**Connect Button**: `Connect Reddit`
+
+**All other text follows the same pattern as Facebook**
+
+**API Documentation Link**: `Reddit API Documentation`
+
+---
+
 ## Connection States
 
 ### Connecting State
