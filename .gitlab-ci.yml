@@ -1,0 +1,214 @@
+# GitLab CI/CD Configuration for Post Dominator
+# Next.js 16 + TypeScript + Tailwind CSS
+
+image: node:20-alpine
+
+# Cache node_modules for faster builds
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - node_modules/
+    - .next/cache
+
+# Define stages
+stages:
+  - validate
+  - build
+  - deploy
+
+# Variables
+variables:
+  NODE_ENV: production
+  NEXT_TELEMETRY_DISABLED: 1
+  CI: true
+
+# ============================================
+# VALIDATION STAGE
+# ============================================
+
+# Install dependencies
+install_dependencies:
+  stage: validate
+  script:
+    - npm ci
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+  only:
+    changes:
+      - package.json
+      - package-lock.json
+    - merge_requests
+    - main
+    - develop
+
+# Lint code
+lint:
+  stage: validate
+  dependencies:
+    - install_dependencies
+  script:
+    - npm run lint
+  allow_failure: false
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# Check code formatting
+format_check:
+  stage: validate
+  dependencies:
+    - install_dependencies
+  script:
+    - npm run format:check
+  allow_failure: false
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# Type check
+type_check:
+  stage: validate
+  dependencies:
+    - install_dependencies
+  script:
+    - npx tsc --noEmit
+  allow_failure: false
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# ============================================
+# BUILD STAGE
+# ============================================
+
+# Build the application
+build:
+  stage: build
+  dependencies:
+    - install_dependencies
+  script:
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - .next/
+      - public/
+    expire_in: 1 hour
+  only:
+    - merge_requests
+    - main
+    - develop
+    - tags
+
+# ============================================
+# DEPLOY STAGE
+# ============================================
+
+# Deploy to staging environment
+deploy_staging:
+  stage: deploy
+  dependencies:
+    - build
+  environment:
+    name: staging
+    url: https://staging.yourdomain.com
+  script:
+    - echo "Deploying to staging environment..."
+    # Add your staging deployment commands here
+    # Examples:
+    # - npm run start &
+    # - docker build -t post-dominator:staging .
+    # - docker push registry.gitlab.com/your-group/post-dominator:staging
+    # - kubectl apply -f k8s/staging/
+  only:
+    - develop
+  when: manual
+  allow_failure: false
+
+# Deploy to production environment
+deploy_production:
+  stage: deploy
+  dependencies:
+    - build
+  environment:
+    name: production
+    url: https://yourdomain.com
+  script:
+    - echo "Deploying to production environment..."
+    # Add your production deployment commands here
+    # Examples:
+    # - npm run start &
+    # - docker build -t post-dominator:latest .
+    # - docker push registry.gitlab.com/your-group/post-dominator:latest
+    # - kubectl apply -f k8s/production/
+  only:
+    - main
+    - tags
+  when: manual
+  allow_failure: false
+
+# ============================================
+# OPTIONAL: DOCKER BUILD
+# ============================================
+
+# Build Docker image
+docker_build:
+  stage: build
+  image: docker:24
+  services:
+    - docker:24-dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG -t $CI_REGISTRY_IMAGE:latest .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    - docker push $CI_REGISTRY_IMAGE:latest
+  only:
+    - main
+    - develop
+    - tags
+  when: manual
+
+# ============================================
+# OPTIONAL: SECURITY SCANNING
+# ============================================
+
+# Security audit
+security_audit:
+  stage: validate
+  dependencies:
+    - install_dependencies
+  script:
+    - npm audit --audit-level=moderate
+  allow_failure: true
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# ============================================
+# OPTIONAL: PERFORMANCE TESTING
+# ============================================
+
+# Lighthouse CI (optional)
+lighthouse:
+  stage: validate
+  image: node:20-alpine
+  dependencies:
+    - build
+  before_script:
+    - npm install -g @lhci/cli
+  script:
+    - lhci autorun
+  allow_failure: true
+  only:
+    - main
+  when: manual
+
