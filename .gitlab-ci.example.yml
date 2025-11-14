@@ -1,0 +1,31 @@
+# Example GitLab CI/CD Configuration
+# Copy this file and customize for your deployment target
+
+# For Vercel deployment, add this to your deploy:production script:
+# script:
+#   - npm install -g vercel
+#   - vercel --prod --token=$VERCEL_TOKEN --yes
+
+# For self-hosted server deployment (SSH):
+# script:
+#   - apt-get update && apt-get install -y openssh-client rsync
+#   - eval $(ssh-agent -s)
+#   - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+#   - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+#   - ssh-keyscan $DEPLOY_SERVER >> ~/.ssh/known_hosts
+#   - rsync -avz --delete .next/ public/ package.json package-lock.json $DEPLOY_USER@$DEPLOY_SERVER:/app/
+#   - ssh $DEPLOY_USER@$DEPLOY_SERVER "cd /app && npm ci --production && pm2 restart post-dominator"
+
+# For Docker deployment:
+# script:
+#   - docker build -t post-dominator:$CI_COMMIT_SHORT_SHA .
+#   - docker tag post-dominator:$CI_COMMIT_SHORT_SHA post-dominator:latest
+#   - docker push $DOCKER_REGISTRY/post-dominator:$CI_COMMIT_SHORT_SHA
+#   - docker push $DOCKER_REGISTRY/post-dominator:latest
+#   - ssh $DEPLOY_USER@$DEPLOY_SERVER "docker pull $DOCKER_REGISTRY/post-dominator:latest && docker-compose up -d"
+
+# For Kubernetes deployment:
+# script:
+#   - kubectl set image deployment/post-dominator post-dominator=$DOCKER_REGISTRY/post-dominator:$CI_COMMIT_SHORT_SHA
+#   - kubectl rollout status deployment/post-dominator
+
