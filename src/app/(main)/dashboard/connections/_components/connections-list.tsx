@@ -1,10 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { ConnectionCard } from "./connection-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
+import type { SocialConnection } from "@/types/oauth";
 
 export interface SocialPlatform {
   id: string;
@@ -127,30 +130,87 @@ const platforms: SocialPlatform[] = [
 ];
 
 export function ConnectionsList() {
-  const [connectedPlatforms, setConnectedPlatforms] = useState<Set<string>>(new Set());
+  const searchParams = useSearchParams();
+  const [connections, setConnections] = useState<SocialConnection[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchConnections = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/connections");
+      if (response.ok) {
+        const data = await response.json();
+        setConnections(data.connections || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch connections:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch connections on mount
+  useEffect(() => {
+    fetchConnections();
+  }, []);
+
+  // Check for success/error messages in URL
+  useEffect(() => {
+    const success = searchParams.get("success");
+    const error = searchParams.get("error");
+    const message = searchParams.get("message");
+
+    if (success === "true") {
+      toast.success("Account connected successfully!");
+      // Refresh connections
+      fetchConnections();
+    } else if (error) {
+      toast.error(message || "Connection failed. Please try again.");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleConnect = async (platformId: string) => {
-    // This will trigger OAuth flow
-    // For now, just update local state
+    // Redirect to OAuth initiation
     window.location.href = `/api/auth/${platformId}`;
   };
 
   const handleDisconnect = async (platformId: string) => {
-    // Call API to disconnect
-    setConnectedPlatforms((prev) => {
-      const next = new Set(prev);
-      next.delete(platformId);
-      return next;
-    });
+    try {
+      const response = await fetch("/api/auth/disconnect", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ platform: platformId }),
+      });
+
+      if (response.ok) {
+        toast.success(`${platforms.find((p) => p.id === platformId)?.name} disconnected successfully`);
+        fetchConnections();
+      } else {
+        toast.error("Failed to disconnect account");
+      }
+    } catch (error) {
+      console.error("Disconnect error:", error);
+      toast.error("Failed to disconnect account");
+    }
   };
 
   const handleRefresh = async (platformId: string) => {
-    // Refresh the connection/token
-    // Call API to refresh
+    // TODO: Implement token refresh
+    toast.info("Token refresh coming soon");
   };
 
+  // Create a map of connected platforms
+  const connectedPlatforms = new Set(connections.map((conn) => conn.platform));
   const connectedCount = connectedPlatforms.size;
   const totalCount = platforms.length;
+
+  // Get connection details for each platform
+  const getConnectionForPlatform = (platformId: string): SocialConnection | undefined => {
+    return connections.find((conn) => conn.platform === platformId);
+  };
 
   return (
     <div className="space-y-6">
@@ -187,18 +247,43 @@ export function ConnectionsList() {
       </Card>
 
       {/* Platform Cards Grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {platforms.map((platform) => (
-          <ConnectionCard
-            key={platform.id}
-            platform={platform}
-            isConnected={connectedPlatforms.has(platform.id)}
-            onConnect={() => handleConnect(platform.id)}
-            onDisconnect={() => handleDisconnect(platform.id)}
-            onRefresh={() => handleRefresh(platform.id)}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {platforms.map((platform) => (
+            <Card key={platform.id} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-20 bg-muted rounded" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {platforms.map((platform) => {
+            const connection = getConnectionForPlatform(platform.id);
+            return (
+              <ConnectionCard
+                key={platform.id}
+                platform={{
+                  ...platform,
+                  isConnected: connectedPlatforms.has(platform.id),
+                  connectedAccount: connection
+                    ? {
+                        username: connection.platformUsername || connection.platformUserId,
+                        profileImage: connection.platformProfileImage,
+                        connectedAt: new Date(connection.connectedAt).toLocaleDateString(),
+                      }
+                    : undefined,
+                }}
+                isConnected={connectedPlatforms.has(platform.id)}
+                onConnect={() => handleConnect(platform.id)}
+                onDisconnect={() => handleDisconnect(platform.id)}
+                onRefresh={() => handleRefresh(platform.id)}
+              />
+            );
+          })}
+        </div>
+      )}
 
       {/* Help Section */}
       <Card className="shadow-xs border-dashed">

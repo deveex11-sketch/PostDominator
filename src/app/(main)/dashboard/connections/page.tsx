@@ -1,8 +1,7 @@
-"use client";
-
+import { Suspense } from "react";
 import { ConnectionsList } from "./_components/connections-list";
 
-export default function ConnectionsPage() {
+function ConnectionsPageContent() {
   return (
     <div className="flex h-full flex-col gap-6 overflow-hidden">
       <div className="space-y-2">
@@ -15,6 +14,14 @@ export default function ConnectionsPage() {
         <ConnectionsList />
       </div>
     </div>
+  );
+}
+
+export default function ConnectionsPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ConnectionsPageContent />
+    </Suspense>
   );
 }
 
