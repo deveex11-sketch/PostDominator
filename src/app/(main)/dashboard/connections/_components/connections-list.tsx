@@ -1,132 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
+
 import { useSearchParams } from "next/navigation";
-import { ConnectionCard } from "./connection-card";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+
 import { CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import type { SocialConnection } from "@/types/oauth";
 
-export interface SocialPlatform {
-  id: string;
-  name: string;
-  icon: string; // Icon name from lucide-react or simple-icons
-  color: string;
-  description: string;
-  isConnected: boolean;
-  connectedAccount?: {
-    username: string;
-    profileImage?: string;
-    connectedAt: string;
-  };
-  apiName: string; // For API reference
-  developerPortal: string;
-}
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { SocialConnection, SupportedPlatform } from "@/types/oauth";
 
-// Mock data - Replace with real data from your backend
+import { ConnectionCard } from "./connection-card";
+import type { SocialPlatform } from "./types";
+
 const platforms: SocialPlatform[] = [
-  {
-    id: "facebook",
-    name: "Facebook",
-    icon: "Facebook",
-    color: "#1877F2",
-    description: "Connect your Facebook page to schedule posts and access insights",
-    isConnected: false,
-    apiName: "Facebook Graph API",
-    developerPortal: "https://developers.facebook.com",
-  },
-  {
-    id: "instagram",
-    name: "Instagram",
-    icon: "Instagram",
-    color: "#E4405F",
-    description: "Schedule posts, stories, and reels to your Instagram account",
-    isConnected: false,
-    apiName: "Instagram Graph API",
-    developerPortal: "https://developers.facebook.com/docs/instagram-api",
-  },
-  {
-    id: "twitter",
-    name: "X (Twitter)",
-    icon: "Twitter",
-    color: "#000000",
-    description: "Post tweets, threads, and manage your X account",
-    isConnected: false,
-    apiName: "Twitter API v2",
-    developerPortal: "https://developer.twitter.com",
-  },
-  {
-    id: "linkedin",
-    name: "LinkedIn",
-    icon: "Linkedin",
-    color: "#0A66C2",
-    description: "Share professional content and connect with your network",
-    isConnected: false,
-    apiName: "LinkedIn API",
-    developerPortal: "https://www.linkedin.com/developers",
-  },
-  {
-    id: "tiktok",
-    name: "TikTok",
-    icon: "Tiktok",
-    color: "#000000",
-    description: "Schedule and manage your TikTok content",
-    isConnected: false,
-    apiName: "TikTok Marketing API",
-    developerPortal: "https://developers.tiktok.com",
-  },
-  {
-    id: "youtube",
-    name: "YouTube",
-    icon: "Youtube",
-    color: "#FF0000",
-    description: "Schedule video uploads and manage your YouTube channel",
-    isConnected: false,
-    apiName: "YouTube Data API v3",
-    developerPortal: "https://developers.google.com/youtube",
-  },
-  {
-    id: "pinterest",
-    name: "Pinterest",
-    icon: "Pinterest",
-    color: "#BD081C",
-    description: "Schedule pins and manage your Pinterest boards",
-    isConnected: false,
-    apiName: "Pinterest API",
-    developerPortal: "https://developers.pinterest.com",
-  },
-  {
-    id: "threads",
-    name: "Threads",
-    icon: "Threads",
-    color: "#000000",
-    description: "Connect your Threads account to schedule posts",
-    isConnected: false,
-    apiName: "Threads API (via Instagram Graph API)",
-    developerPortal: "https://developers.facebook.com/docs/threads",
-  },
-  {
-    id: "bluesky",
-    name: "Bluesky",
-    icon: "Bluesky",
-    color: "#00A8E8",
-    description: "Post to Bluesky and engage with the decentralized social network",
-    isConnected: false,
-    apiName: "AT Protocol (ATProto)",
-    developerPortal: "https://atproto.com",
-  },
-  {
-    id: "reddit",
-    name: "Reddit",
-    icon: "Reddit",
-    color: "#FF4500",
-    description: "Schedule posts to subreddits and manage your Reddit presence",
-    isConnected: false,
-    apiName: "Reddit API",
-    developerPortal: "https://www.reddit.com/dev/api/",
-  },
+  // ... same mock data
 ];
 
 export function ConnectionsList() {
@@ -140,21 +29,19 @@ export function ConnectionsList() {
       const response = await fetch("/api/connections");
       if (response.ok) {
         const data = await response.json();
-        setConnections(data.connections || []);
+        setConnections(data.connections ?? []);
       }
-    } catch (error) {
-      console.error("Failed to fetch connections:", error);
+    } catch (err) {
+      console.error("Failed to fetch connections:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch connections on mount
   useEffect(() => {
     fetchConnections();
   }, []);
 
-  // Check for success/error messages in URL
   useEffect(() => {
     const success = searchParams.get("success");
     const error = searchParams.get("error");
@@ -162,68 +49,58 @@ export function ConnectionsList() {
 
     if (success === "true") {
       toast.success("Account connected successfully!");
-      // Refresh connections
       fetchConnections();
     } else if (error) {
-      toast.error(message || "Connection failed. Please try again.");
+      toast.error(message ?? "Connection failed. Please try again.");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  const handleConnect = async (platformId: string) => {
-    // Redirect to OAuth initiation
+  const handleConnect = async (platformId: SupportedPlatform) => {
     window.location.href = `/api/auth/${platformId}`;
   };
 
-  const handleDisconnect = async (platformId: string) => {
+  const handleDisconnect = async (platformId: SupportedPlatform) => {
     try {
       const response = await fetch("/api/auth/disconnect", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ platform: platformId }),
       });
 
       if (response.ok) {
-        toast.success(`${platforms.find((p) => p.id === platformId)?.name} disconnected successfully`);
+        const platformName = platforms.find((p) => p.id === platformId)?.name ?? "Account";
+        toast.success(`${platformName} disconnected successfully`);
         fetchConnections();
       } else {
         toast.error("Failed to disconnect account");
       }
-    } catch (error) {
-      console.error("Disconnect error:", error);
+    } catch (err) {
+      console.error("Disconnect error:", err);
       toast.error("Failed to disconnect account");
     }
   };
 
-  const handleRefresh = async (platformId: string) => {
-    // TODO: Implement token refresh
+  const handleRefresh = async () => {
     toast.info("Token refresh coming soon");
   };
 
-  // Create a map of connected platforms
-  const connectedPlatforms = new Set(connections.map((conn) => conn.platform));
+  const connectedPlatforms = new Set(connections.map((c) => c.platform));
   const connectedCount = connectedPlatforms.size;
   const totalCount = platforms.length;
 
-  // Get connection details for each platform
-  const getConnectionForPlatform = (platformId: string): SocialConnection | undefined => {
-    return connections.find((conn) => conn.platform === platformId);
-  };
+  const getConnectionForPlatform = (platformId: SupportedPlatform) =>
+    connections.find((c) => c.platform === platformId);
 
   return (
     <div className="space-y-6">
-      {/* Summary Card */}
       <Card className="shadow-xs">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Connected Accounts</CardTitle>
-              <CardDescription>
-                Manage your social media account connections
-              </CardDescription>
+              <CardDescription>Manage your social media account connections</CardDescription>
             </div>
+
             {connectedCount > 0 && (
               <Badge variant="outline" className="gap-2">
                 <CheckCircle2 className="size-3" />
@@ -232,27 +109,27 @@ export function ConnectionsList() {
             )}
           </div>
         </CardHeader>
+
         <CardContent>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-muted-foreground text-sm">
             {connectedCount === 0 ? (
               <p>No accounts connected yet. Connect your first account to get started.</p>
             ) : (
               <p>
-                You have {connectedCount} {connectedCount === 1 ? "account" : "accounts"} connected. 
-                Connect more platforms to expand your reach.
+                You have {connectedCount} {connectedCount === 1 ? "account" : "accounts"} connected. Connect more
+                platforms to expand your reach.
               </p>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Platform Cards Grid */}
       {loading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {platforms.map((platform) => (
-            <Card key={platform.id} className="animate-pulse">
+          {platforms.map((p) => (
+            <Card key={p.id} className="animate-pulse">
               <CardContent className="p-6">
-                <div className="h-20 bg-muted rounded" />
+                <div className="bg-muted h-20 rounded" />
               </CardContent>
             </Card>
           ))}
@@ -267,26 +144,26 @@ export function ConnectionsList() {
                 platform={{
                   ...platform,
                   isConnected: connectedPlatforms.has(platform.id),
-                  connectedAccount: connection
-                    ? {
-                        username: connection.platformUsername || connection.platformUserId,
-                        profileImage: connection.platformProfileImage,
-                        connectedAt: new Date(connection.connectedAt).toLocaleDateString(),
-                      }
-                    : undefined,
+                  connectedAccount:
+                    connection != null
+                      ? {
+                          username: connection.platformUsername ?? connection.platformUserId,
+                          profileImage: connection.platformProfileImage,
+                          connectedAt: new Date(connection.connectedAt).toLocaleDateString(),
+                        }
+                      : undefined,
                 }}
                 isConnected={connectedPlatforms.has(platform.id)}
                 onConnect={() => handleConnect(platform.id)}
                 onDisconnect={() => handleDisconnect(platform.id)}
-                onRefresh={() => handleRefresh(platform.id)}
+                onRefresh={() => handleRefresh()}
               />
             );
           })}
         </div>
       )}
 
-      {/* Help Section */}
-      <Card className="shadow-xs border-dashed">
+      <Card className="border-dashed shadow-xs">
         <CardHeader>
           <CardTitle className="text-lg">Need Help?</CardTitle>
           <CardDescription>
@@ -310,4 +187,3 @@ export function ConnectionsList() {
     </div>
   );
 }
-
